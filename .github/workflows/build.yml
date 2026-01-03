@@ -1,0 +1,37 @@
+name: stealth-apk-forge-v10
+on: [push, workflow_dispatch]
+
+jobs:
+  forge:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js v20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          
+      - name: Installatie Dependencies
+        run: |
+          npm install puppeteer puppeteer-extra puppeteer-extra-plugin-stealth @capacitor/core @capacitor/cli @capacitor/android
+          sudo apt-get update
+          sudo apt-get install -y libgbm1 libasound2 libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 libxkbcommon0 libxcomposite1 libxdamage1 libxrandr2 libpango-1.0-0 libcairo2 libxshmfence1
+          
+      - name: 🕶️ Stealth Broncode Extractie
+        run: node scraper.js
+        env:
+          AI_URL: ${{ secrets.AI_URL }}
+          SESSION_COOKIES: ${{ secrets.SESSION_COOKIES }}
+          
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'zulu'
+      - name: Build APK
+        run: node convert-to-apk.js
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
