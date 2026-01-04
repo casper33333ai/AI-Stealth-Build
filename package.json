@@ -1,4 +1,6 @@
 {
+  "name": "ai-stealth-build",
+  "version": "1.0.0",
   "dependencies": {
     "puppeteer-extra": "^3.3.6",
     "puppeteer-extra-plugin-stealth": "^2.11.2",
