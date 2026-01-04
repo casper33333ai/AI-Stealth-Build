@@ -3,51 +3,52 @@ const fs = require('fs');
 const path = require('path');
 
 async function forge() {
-  console.log('🏗️ [FORGE] Starting Native Build Pipeline...');
+  console.log('--- STARTING FORGE v12 ---');
   
+  const run = (cmd) => {
+    console.log('Executing: ' + cmd);
+    execSync(cmd, { stdio: 'inherit' });
+  };
+
   try {
-    // 1. Forceer een schone web directory met index.html
-    if (!fs.existsSync('www')) {
-      fs.mkdirSync('www', { recursive: true });
-    }
-    
+    // 1. Setup web directory
+    if (!fs.existsSync('www')) fs.mkdirSync('www', { recursive: true });
     if (!fs.existsSync(path.join('www', 'index.html'))) {
-      console.log('⚠️ [WARN] No index.html found, creating placeholder...');
-      fs.writeFileSync(path.join('www', 'index.html'), '<html><body><h1>App Loading...</h1></body></html>');
+      fs.writeFileSync(path.join('www', 'index.html'), '<html><body><h1>Re-scraped content missing</h1></body></html>');
     }
 
-    // 2. Capacitor Config: Forceert WebView naar de juiste mappen en staat navigatie toe
+    // 2. Build Capacitor Config
     const capConfig = {
       appId: "com.forge.stealth",
       appName: "Stealth AI App",
       webDir: "www",
-      bundledWebRuntime: false,
       server: {
         androidScheme: "https",
-        allowNavigation: ["*"],
-        cleartext: true
+        allowNavigation: ["*"]
       }
     };
     fs.writeFileSync('capacitor.config.json', JSON.stringify(capConfig, null, 2));
-    console.log('⚙️ [CONFIG] Capacitor settings forced.');
 
-    // 3. Android Project Setup
+    // 3. Native Platform Management
     if (!fs.existsSync('android')) {
-      console.log('➕ [PLATFORM] Adding Android...');
-      execSync('npx cap add android', { stdio: 'inherit' });
+      run('npx cap add android');
     }
     
-    console.log('🔄 [SYNC] Syncing native project...');
-    execSync('npx cap sync android', { stdio: 'inherit' });
-    
-    // 4. Gradle APK Build
-    console.log('🛠️ [BUILD] Compiling APK...');
+    run('npx cap sync android');
+
+    // 4. Gradle Build with Permission Fix
+    console.log('Configuring Gradle...');
+    if (process.platform !== 'win32') {
+      run('chmod -R 777 android');
+    }
+
     const gradlew = process.platform === 'win32' ? 'gradlew.bat' : './gradlew';
-    execSync('cd android && chmod +x gradlew && ' + gradlew + ' assembleDebug', { stdio: 'inherit' });
+    run('cd android && ' + gradlew + ' assembleDebug --stacktrace');
     
-    console.log('🚀 [DONE] APK Forge Complete!');
+    console.log('--- FORGE SUCCESSFUL ---');
   } catch (e) {
-    console.error('❌ [ERROR] Forge failed:', e.message);
+    console.error('--- FORGE FAILED ---');
+    console.error(e.message);
     process.exit(1);
   }
 }
