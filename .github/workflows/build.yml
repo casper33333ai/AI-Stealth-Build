@@ -1,29 +1,42 @@
-name: stealth-apk-forge-v11
+name: stealth-apk-forge-v12
 on: [push, workflow_dispatch]
 jobs:
   forge:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Install Build Tools
+          
+      - name: Install System Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgbm-dev libnss3 libatk-bridge2.0-0 libgtk-3-0 libasound2
+          
+      - name: Install Node Dependencies
         run: |
           npm install puppeteer-extra puppeteer-extra-plugin-stealth @capacitor/core @capacitor/cli @capacitor/android
           npx puppeteer browsers install chrome
-      - name: 🕶️ Stealth Extraction
+          
+      - name: 🕶️ Scrape AI Content
         run: node scraper.js
         env:
           AI_URL: ${{ secrets.AI_URL }}
           SESSION_COOKIES: ${{ secrets.SESSION_COOKIES }}
-      - uses: actions/setup-java@v4
+          
+      - name: Setup Java
+        uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'zulu'
-      - name: 🏗️ Forge Native APK
+          
+      - name: 🏗️ Forge APK
         run: node convert-to-apk.js
-      - name: 📦 Deliver Artifact
+        
+      - name: 📦 Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: Stealth-AI-App-APK
